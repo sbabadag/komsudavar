@@ -1,4 +1,6 @@
-import { Image, StyleSheet, Platform } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { Image, StyleSheet, Button, View, ScrollView, TextInput, Platform } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 
 import { HelloWave } from '@/components/HelloWave';
 import ParallaxScrollView from '@/components/ParallaxScrollView';
@@ -6,6 +8,48 @@ import { ThemedText } from '@/components/ThemedText';
 import { ThemedView } from '@/components/ThemedView';
 
 export default function HomeScreen() {
+  const [cards, setCards] = useState([]);
+
+  useEffect(() => {
+    (async () => {
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (status !== 'granted') {
+          alert('Sorry, we need camera roll permissions to make this work!');
+        }
+      }
+    })();
+  }, []);
+
+  const createNewCard = () => {
+    setCards([...cards, { images: [], title: '', description: '' }]);
+  };
+
+  const addImageToCard = async (cardIndex) => {
+    let result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    console.log('Image Picker Result:', result); // Log the entire result
+
+    if (!result.canceled && result.assets && result.assets.length > 0) {
+      const uri = result.assets[0].uri;
+      console.log('Image URI:', uri); // Log the URI
+      const newCards = [...cards];
+      newCards[cardIndex].images.push(uri);
+      setCards(newCards);
+    }
+  };
+
+  const updateCardText = (cardIndex, field, value) => {
+    const newCards = [...cards];
+    newCards[cardIndex][field] = value;
+    setCards(newCards);
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -15,50 +59,79 @@ export default function HomeScreen() {
           style={styles.reactLogo}
         />
       }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({ ios: 'cmd + d', android: 'cmd + m' })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          Tap the Explore tab to learn more about what's included in this starter app.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          When you're ready, run{' '}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
+      <ScrollView contentContainerStyle={styles.scrollViewContent}>
+        {cards.map((card, index) => (
+          <ThemedView key={index} style={styles.cardContainer}>
+            <TextInput
+              style={styles.cardTitle}
+              placeholder="Product Title"
+              value={card.title}
+              onChangeText={(text) => updateCardText(index, 'title', text)}
+            />
+            <TextInput
+              style={styles.cardDescription}
+              placeholder="Product description goes here. It can be a brief detail about the product."
+              value={card.description}
+              onChangeText={(text) => updateCardText(index, 'description', text)}
+              multiline
+            />
+            <View style={styles.imageGrid}>
+              {card.images.map((imageUri, imgIndex) => (
+                <Image key={imgIndex} source={{ uri: imageUri }} style={styles.cardImage} />
+              ))}
+            </View>
+            <Button title="Add Image" onPress={() => addImageToCard(index)} />
+            <View style={styles.buttonContainer}>
+              <Button title="Buy" onPress={() => {}} />
+              <Button title="Ask Price" onPress={() => {}} />
+            </View>
+          </ThemedView>
+        ))}
+        <Button title="Create a New Good" onPress={createNewCard} style={styles.createNewGoodButton} />
+      </ScrollView>
     </ParallaxScrollView>
   );
 }
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
+  scrollViewContent: {
+    padding: 16,
   },
-  stepContainer: {
-    gap: 8,
+  cardContainer: {
+    padding: 16,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 5,
+    marginBottom: 16,
+  },
+  cardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
     marginBottom: 8,
+  },
+  cardDescription: {
+    fontSize: 14,
+    marginBottom: 16,
+  },
+  imageGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 16,
+  },
+  cardImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 8,
+    margin: 4,
+  },
+  buttonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
   },
   reactLogo: {
     height: 178,
@@ -66,5 +139,8 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     position: 'absolute',
+  },
+  createNewGoodButton: {
+    marginTop: 16,
   },
 });
