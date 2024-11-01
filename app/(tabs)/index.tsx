@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Image, StyleSheet, Button, View, ScrollView, TextInput, Platform } from 'react-native';
+import { Image, StyleSheet, Button, View, ScrollView, TextInput, Platform, Modal, TouchableOpacity } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 
 import { HelloWave } from '@/components/HelloWave';
@@ -9,6 +9,7 @@ import { ThemedView } from '@/components/ThemedView';
 
 export default function HomeScreen() {
   const [cards, setCards] = useState([]);
+  const [enlargedImage, setEnlargedImage] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -50,6 +51,14 @@ export default function HomeScreen() {
     setCards(newCards);
   };
 
+  const handleImagePress = (uri) => {
+    setEnlargedImage(uri);
+  };
+
+  const handleCloseModal = () => {
+    setEnlargedImage(null);
+  };
+
   return (
     <ParallaxScrollView
       headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
@@ -77,7 +86,9 @@ export default function HomeScreen() {
             />
             <View style={styles.imageGrid}>
               {card.images.map((imageUri, imgIndex) => (
-                <Image key={imgIndex} source={{ uri: imageUri }} style={styles.cardImage} />
+                <TouchableOpacity key={imgIndex} onPress={() => handleImagePress(imageUri)}>
+                  <Image source={{ uri: imageUri }} style={styles.cardImage} />
+                </TouchableOpacity>
               ))}
             </View>
             <Button title="Add Image" onPress={() => addImageToCard(index)} />
@@ -89,6 +100,15 @@ export default function HomeScreen() {
         ))}
         <Button title="Create a New Good" onPress={createNewCard} style={styles.createNewGoodButton} />
       </ScrollView>
+      {enlargedImage && (
+        <Modal transparent={true} visible={true} onRequestClose={handleCloseModal}>
+          <View style={styles.modalContainer}>
+            <TouchableOpacity style={styles.modalBackground} onPress={handleCloseModal}>
+              <Image source={{ uri: enlargedImage }} style={styles.enlargedImage} />
+            </TouchableOpacity>
+          </View>
+        </Modal>
+      )}
     </ParallaxScrollView>
   );
 }
@@ -142,5 +162,20 @@ const styles = StyleSheet.create({
   },
   createNewGoodButton: {
     marginTop: 16,
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBackground: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    padding: 20,
+    borderRadius: 10,
+  },
+  enlargedImage: {
+    width: 300,
+    height: 300,
+    borderRadius: 10,
   },
 });
